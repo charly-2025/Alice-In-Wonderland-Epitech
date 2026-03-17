@@ -3,6 +3,7 @@ import argparse
 import requests
 import re
 import nltk
+from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, LancasterStemmer, SnowballStemmer
 import string
@@ -29,10 +30,13 @@ parser.add_argument('--postag',type=str, help='Enter a str to postag')
 
 parser.add_argument('--normalize',type=str, help='Enter a str to normalize')
 
+parser.add_argument('--lexdiv',type=int, help='Select a book with his ID')
+
 args = parser.parse_args()
 
 df = pd.read_csv("pg_catalog.csv")
 
+# Bootstrap
 
 def split_into_sentences(text):
     pattern = r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|!)\s*'
@@ -73,9 +77,6 @@ if args.clean :
     else :
         print(clean)
 
-
-
-
 if args.tokenize :
     
     text = args.tokenize
@@ -111,3 +112,43 @@ if args.normalize :
     lancaster = LancasterStemmer()
 
     print([lancaster.stem(t) for t in tokens ])
+
+
+
+# Project Code
+
+# Lexical Diversity Measurements
+
+lexdiv = args.lexdiv
+if lexdiv :
+    url = "https://www.gutenberg.org/cache/epub/"+str(lexdiv)+"/pg"+str(lexdiv)+".txt"
+    response = requests.get(url)
+    if response.status_code == 200:
+        book = response.text
+        start = book.find("*** START OF THE PROJECT GUTENBERG EBOOK")
+        end = book.rfind("*** END OF THE PROJECT GUTENBERG EBOOK")
+        book = book[start:end]
+        if book.find("***") != -1 :
+            book = book.split('***', 2)[2]
+        book = book.replace("[Illustration]","")
+
+        tokens = word_tokenize(book)
+        words = []
+        unique_words = []
+        word_once_occurencing = []
+        for word in tokens :
+            if word not in ["",".","!",",","?",";",":","/"] :
+                words.append(word)
+                if word not in unique_words :
+                    unique_words.append(word)
+                if tokens.count(word) == 1:
+                    word_once_occurencing.append(word)            
+
+        print({
+            "tok":len(words),
+            "typ":len(unique_words),
+            "hap":len(word_once_occurencing),
+            "ttr":len(unique_words)/len(words),
+            "mwl":sum(len(word) for word in words) / len(words),
+            "mwf":len(words)/len(unique_words)
+        })
