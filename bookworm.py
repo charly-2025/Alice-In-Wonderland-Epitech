@@ -7,7 +7,8 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import string
 import spacy
-
+import csv
+from pprint import pprint
 
 # functions imports 
 
@@ -48,6 +49,7 @@ parser.add_argument('--lexdiv',type=int, help='Select a book with his ID')
 parser.add_argument('--entities',type=int, help='Select a book with his ID')
 parser.add_argument('--similar',type=int, help='Select a book with his ID')
 parser.add_argument('--noauthor',action="store_true", help='remove book with the same autor')
+parser.add_argument('--card',type=int, help='retrieve informations from a book')
 args = parser.parse_args()
 
 
@@ -137,5 +139,29 @@ if args.summarize:
         summary = book_summarizer(texte, 2)
         for sentence in summary:
             print(sentence)
+    except:
+        raise ValueError
+
+
+# Book Card
+
+if args.card:
+    try:
+        book = get_book_by_url(args.card)
+        book = clean_book(book)
+        with open('requirements/pg_catalog.csv') as csvfile:
+            f = csv.reader(csvfile)
+            for row in f:
+                if row[0] == str(int(args.card)):
+                    infos = {"id" : row[0], "type": row[1], "date": row[2], "title": row[3], "author": row[5], "language": row[4], "bookshelves": row[6]}
+        book_card = {
+            "info": infos,
+            "lexdiv" : lexical_diversity_measurements(book),
+            "topics": topic_modelling(book),
+            "entities": named_entities_recognition(book),
+            "summary": book_summarizer(book),
+            "similar": books_similarity(df,args.card,noauthor)
+        }
+        pprint(book_card)
     except:
         raise ValueError
