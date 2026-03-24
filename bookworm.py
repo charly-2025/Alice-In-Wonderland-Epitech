@@ -7,30 +7,37 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, LancasterStemmer, SnowballStemmer
 import string
 
+
+# functions imports
+
+from topic_modelling import topic_modelling
+from book_summarizer import book_summarizer
+
+# nltk downloads 
+nltk.download('stopwords')
+nltk.download('punkt')
+
 stop_words = set(stopwords.words('english'))
 translator = str.maketrans('', '', string.punctuation)
 
-
+# parser arguments
 parser = argparse.ArgumentParser()
-
 parser.add_argument('--info',type=int, help='Select a book with his ID')
-
 parser.add_argument('--download',type=int, help='Select a book with his ID')
-
 parser.add_argument('--clean',type=str, help='Enter a str to clean')
 parser.add_argument('--lower',action="store_true", help='Enable lower case')
-
 parser.add_argument('--tokenize',type=str, help='Enter a str to tokenize')
 parser.add_argument('--sent',action="store_true", help='Enable split sentences')
 parser.add_argument('--stop',action="store_true", help='Enable stopword removing')
 parser.add_argument('--punct',action="store_true", help='Enable punctuation removing')
-
 parser.add_argument('--postag',type=str, help='Enter a str to postag')
-
 parser.add_argument('--normalize',type=str, help='Enter a str to normalize')
+parser.add_argument("--topics", type=int)
+parser.add_argument("--summarize", type=int, help="Enter an id to select a specific book to get a summary of the specific book")
 
 args = parser.parse_args()
 
+#df reading the catalog
 df = pd.read_csv("pg_catalog.csv")
 
 
@@ -39,6 +46,18 @@ def split_into_sentences(text):
     sentences = re.split(pattern, text)
     return [s.strip() for s in sentences if s.strip()]
 
+def tokenize(text):
+    text = ' '.join(word.strip(string.punctuation) for word in text )
+    if text.find("***") != -1 :
+        text = text.split('***', 2)[2]
+    text = text.replace("[Illustration]","")
+    text = " ".join(text.split())
+    stop_words = set(stopwords.words('english')) 
+    tokens = nltk.word_tokenize(text.lower())
+    filtered_tokens = [word for word in tokens if word not in stop_words]
+    return filtered_tokens
+
+#BOOTSTRAP
 
 if args.info :
     result = list(df.loc[df["Text#"]==args.info,["Title","Authors","Bookshelves"]].values)[0]
@@ -72,8 +91,6 @@ if args.clean :
         print(clean.lower())
     else :
         print(clean)
-
-
 
 
 if args.tokenize :
@@ -111,3 +128,28 @@ if args.normalize :
     lancaster = LancasterStemmer()
 
     print([lancaster.stem(t) for t in tokens ])
+
+
+# Topic modeling
+
+if args.topics:
+    try:
+        texte = requests.get(f"https://www.gutenberg.org/cache/epub/{args.topics}/pg{args.topics}.txt").text
+        tail, sep, texte = texte.partition('*** START OF THE PROJECT GUTENBERG EBOOK')
+        texte, sep, tail = texte.partition('*** END OF THE PROJECT GUTENBERG EBOOK')
+        texte = re.sub(r'[^a-zA-Z0-9\s\n]', '', texte)
+        print(topic_modelling(texte))
+    except:
+        raise ValueError
+
+
+# book summarizer
+
+if args.summarize:
+    texte = requests.get(f"https://www.gutenberg.org/cache/epub/{args.summarize}/pg{args.summarize}.txt").text
+    tail, sep, texte = texte.partition('*** START OF THE PROJECT GUTENBERG EBOOK')
+    texte, sep, tail = texte.partition('*** END OF THE PROJECT GUTENBERG EBOOK')
+    texte = re.sub(r'[^a-zA-Z0-9\s\n]', '', texte.lower())
+    summary = book_summarizer(texte, 2)
+    for sentence in summary:
+        print(sentence)
