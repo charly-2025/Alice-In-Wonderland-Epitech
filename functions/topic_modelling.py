@@ -5,7 +5,6 @@ from nltk.corpus import stopwords
 def topic_modelling(texte):
     stop_words = set(stopwords.words('english'))
     chapters = texte.split("\r\n\r\n")
-    print(len(chapters))
     topics = {}
     count = 1
     for i in chapters:
