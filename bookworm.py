@@ -7,9 +7,13 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, LancasterStemmer, SnowballStemmer
 import string
+import spacy
+import locationtagger
+import json
 
 stop_words = set(stopwords.words('english'))
 translator = str.maketrans('', '', string.punctuation)
+nlp = spacy.load("en_core_web_sm")
 
 
 parser = argparse.ArgumentParser()
@@ -31,6 +35,12 @@ parser.add_argument('--postag',type=str, help='Enter a str to postag')
 parser.add_argument('--normalize',type=str, help='Enter a str to normalize')
 
 parser.add_argument('--lexdiv',type=int, help='Select a book with his ID')
+
+parser.add_argument('--entities',type=int, help='Select a book with his ID')
+
+parser.add_argument('--similar',type=int, help='Select a book with his ID')
+parser.add_argument('--noauthor',action="store_true", help='remove book with the same autor')
+
 
 args = parser.parse_args()
 
@@ -152,3 +162,102 @@ if lexdiv :
             "mwl":sum(len(word) for word in words) / len(words),
             "mwf":len(words)/len(unique_words)
         })
+
+
+def get_location(book):    
+
+    # Process the text
+    doc = nlp(book)
+
+    # Extract and print entities
+    persons = []
+    for ent in doc.ents:
+        if ent.label_ == "PERSON" and ent.text not in persons:
+            persons.append(ent.text)
+
+    locations = []
+    for ent in doc.ents:
+        if ent.label_ in ["GPE", "LOC"] and ent.text not in locations:
+            locations.append(ent.text)
+        
+    return {
+        "characters":persons,
+        "locations":locations
+    }
+
+location = args.entities
+if location :
+    url = "https://www.gutenberg.org/cache/epub/"+str(location)+"/pg"+str(location)+".txt"
+    response = requests.get(url)
+    if response.status_code == 200:
+        book = response.text
+        start = book.find("*** START OF THE PROJECT GUTENBERG EBOOK")
+        end = book.rfind("*** END OF THE PROJECT GUTENBERG EBOOK")
+        book = book[start:end]
+        if book.find("***") != -1 :
+            book = book.split('***', 2)[2]
+        book = book.replace("[Illustration]","")
+        print(get_location(book))
+
+
+
+similar = args.similar
+if similar :
+    row_book = df.loc[df["Text#"] == similar,["Title","Subjects","Authors","Issued"]].values[0]
+    dict_book = {
+        "title":row_book[0],
+        "subject":row_book[1].split(";"),
+        "author":row_book[2],
+        "issued":row_book[3]
+    }
+    reco = []
+    for subject in dict_book["subject"]:
+        x = df.loc[df["Subjects"].str.contains(subject, na=False),["Text#","Title","Subjects","Authors","Issued"]].values
+        if x.shape[0] > 0 :
+            for elem in x :
+               reco.append({
+                    "id":elem[0],
+                    "title":elem[1],
+                    "subject":elem[2].split(";"),
+                    "author":elem[3],
+                    "issued":elem[4]
+                }) 
+    clean_reco = []
+    clean_reco_title = []
+    noauthor = args.noauthor
+    for rec in reco :
+        if rec["title"] not in clean_reco_title and rec["id"] != similar and dict_book["title"] not in rec["title"]:
+            if noauthor :
+                if dict_book["author"] not in rec["author"] :
+                    clean_reco.append(rec)
+                    clean_reco_title.append(rec["title"])
+                else :
+                    print("aie")
+            else : 
+                clean_reco.append(rec)
+                clean_reco_title.append(rec["title"])
+    
+    for elem in clean_reco :
+        count = 0
+        for cat in dict_book["subject"] :
+            for subject in elem["subject"]:
+                if cat in subject :
+                    count += 1
+        elem["commun"] = count
+
+    sorted_clean_reco = sorted(clean_reco, key=lambda x: x['commun'],reverse=True)
+
+    
+    final_df = {"Id":[],"Title":[],"Category":[]}
+    for i in range(5):
+        final_df["Id"].append(sorted_clean_reco[i]["id"])
+        final_df["Title"].append(sorted_clean_reco[i]["title"])
+        final_df["Category"].append(sorted_clean_reco[i]["subject"])
+
+    final_df = pd.DataFrame(final_df)
+
+    print(final_df)
+    with open("data.json", "w") as file:
+        json.dump(sorted_clean_reco, file, indent=4)
+    
+    
