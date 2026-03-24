@@ -27,7 +27,7 @@ translator = str.maketrans('', '', string.punctuation)
 
 
 # spacy downloads
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("en_core_web_sm") # python -m spacy download en_core_web_sm
 
 
 # parser arguments
