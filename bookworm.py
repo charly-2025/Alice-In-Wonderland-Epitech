@@ -5,21 +5,17 @@ import re
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer, LancasterStemmer, SnowballStemmer
 import string
 import spacy
-import locationtagger
-import json
 
 
 # functions imports 
 
-from book_summarizer import book_summarizer
-from topic_modelling import topic_modelling
-
-from lexical_diversity_measurements import lexical_diversity_measurements
-from named_entities_recognition import named_entities_recognition
-from books_similarity import books_similarity
+from functions.book_summarizer import book_summarizer
+from functions.topic_modelling import topic_modelling
+from functions.lexical_diversity_measurements import lexical_diversity_measurements
+from functions.named_entities_recognition import named_entities_recognition
+from functions.books_similarity import books_similarity
 
 
 # nltk downloads 
@@ -56,15 +52,13 @@ args = parser.parse_args()
 
 
 # df reading the catalog
-df = pd.read_csv("pg_catalog.csv")
+df = pd.read_csv("requirements/pg_catalog.csv")
 
 # commun functions
 
 def split_into_sentences(text):
     pattern = r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|!)\s*'
     sentences = re.split(pattern, text)
-    return [s.strip() for s in sentences if s.strip()]
-
     return [s.strip() for s in sentences if s.strip()]
 
 def tokenize(text):
@@ -128,10 +122,8 @@ if similar :
 
 if args.topics:
     try:
-        texte = requests.get(f"https://www.gutenberg.org/cache/epub/{args.topics}/pg{args.topics}.txt").text
-        tail, sep, texte = texte.partition('*** START OF THE PROJECT GUTENBERG EBOOK')
-        texte, sep, tail = texte.partition('*** END OF THE PROJECT GUTENBERG EBOOK')
-        texte = re.sub(r'[^a-zA-Z0-9\s\n]', '', texte)
+        texte = get_book_by_url(args.topics)
+        texte = clean_book(texte)
         print(topic_modelling(texte))
     except:
         raise ValueError
@@ -140,10 +132,8 @@ if args.topics:
     
 if args.summarize:
     try:
-        texte = requests.get(f"https://www.gutenberg.org/cache/epub/{args.summarize}/pg{args.summarize}.txt").text
-        tail, sep, texte = texte.partition('*** START OF THE PROJECT GUTENBERG EBOOK')
-        texte, sep, tail = texte.partition('*** END OF THE PROJECT GUTENBERG EBOOK')
-        texte = re.sub(r'[^a-zA-Z0-9\s\n]', '', texte.lower())
+        texte = get_book_by_url(args.topics)
+        texte = clean_book(texte)
         summary = book_summarizer(texte, 2)
         for sentence in summary:
             print(sentence)
