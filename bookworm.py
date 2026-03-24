@@ -185,8 +185,8 @@ def get_location(book):
         "locations":locations
     }
 
-location = args.entities
-if location :
+entities = args.entities
+if entities :
     url = "https://www.gutenberg.org/cache/epub/"+str(location)+"/pg"+str(location)+".txt"
     response = requests.get(url)
     if response.status_code == 200:
@@ -202,62 +202,10 @@ if location :
 
 
 similar = args.similar
-if similar :
-    row_book = df.loc[df["Text#"] == similar,["Title","Subjects","Authors","Issued"]].values[0]
-    dict_book = {
-        "title":row_book[0],
-        "subject":row_book[1].split(";"),
-        "author":row_book[2],
-        "issued":row_book[3]
-    }
-    reco = []
-    for subject in dict_book["subject"]:
-        x = df.loc[df["Subjects"].str.contains(subject, na=False),["Text#","Title","Subjects","Authors","Issued"]].values
-        if x.shape[0] > 0 :
-            for elem in x :
-               reco.append({
-                    "id":elem[0],
-                    "title":elem[1],
-                    "subject":elem[2].split(";"),
-                    "author":elem[3],
-                    "issued":elem[4]
-                }) 
-    clean_reco = []
-    clean_reco_title = []
-    noauthor = args.noauthor
-    for rec in reco :
-        if rec["title"] not in clean_reco_title and rec["id"] != similar and dict_book["title"] not in rec["title"]:
-            if noauthor :
-                if dict_book["author"] not in rec["author"] :
-                    clean_reco.append(rec)
-                    clean_reco_title.append(rec["title"])
-                else :
-                    print("aie")
-            else : 
-                clean_reco.append(rec)
-                clean_reco_title.append(rec["title"])
-    
-    for elem in clean_reco :
-        count = 0
-        for cat in dict_book["subject"] :
-            for subject in elem["subject"]:
-                if cat in subject :
-                    count += 1
-        elem["commun"] = count
+noauthor = args.noauthor
 
-    sorted_clean_reco = sorted(clean_reco, key=lambda x: x['commun'],reverse=True)
+ # Similar is the ID of the Book who is enter
+    if similar :
 
-    
-    final_df = {"Id":[],"Title":[],"Category":[]}
-    for i in range(5):
-        final_df["Id"].append(sorted_clean_reco[i]["id"])
-        final_df["Title"].append(sorted_clean_reco[i]["title"])
-        final_df["Category"].append(sorted_clean_reco[i]["subject"])
-
-    final_df = pd.DataFrame(final_df)
-
-    print(final_df)
-    with open("data.json", "w") as file:
-        json.dump(sorted_clean_reco, file, indent=4)
     
     
