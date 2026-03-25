@@ -51,6 +51,7 @@ parser.add_argument('--entities',type=int, help='Select a book with his ID')
 parser.add_argument('--similar',type=int, help='Select a book with his ID')
 parser.add_argument('--noauthor',action="store_true", help='remove book with the same autor')
 parser.add_argument('--card',type=int, help='retrieve informations from a book')
+parser.add_argument('--cover',action="store_true", help='download the book cover')
 parser.add_argument('--book_cat',type=str, help='retrieve information and download all books from a specific category')
 args = parser.parse_args()
 
@@ -85,6 +86,21 @@ def clean_book(text):
 def get_book_by_url(ID):
     book = requests.get(f"https://www.gutenberg.org/cache/epub/{ID}/pg{ID}.txt").text
     return book
+
+def dl_book_cover(ID,title):
+
+        image_url = f"https://www.gutenberg.org/cache/epub/{ID}/images/cover.jpg"
+        filename = f"cover/{title}-cover.jpg"
+
+        response = requests.get(image_url, stream=True)
+        if response.status_code == 200:
+            with open(filename, 'wb') as file:
+                for chunk in response.iter_content(1024):
+                    file.write(chunk)
+            print(f"Image downloaded as {filename}")
+        else:
+            print("Failed to download image")
+
 
 # Project
 
@@ -164,6 +180,10 @@ if args.card:
             "summary": book_summarizer(book),
             "similar": books_similarity(df,args.card,noauthor)
         }
+        
+        if args.cover :
+            dl_book_cover(args.card,infos["title"])
+
         pprint(book_card)
     except:
         raise ValueError
