@@ -11,6 +11,7 @@ import csv
 from pprint import pprint
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
+import wget
 
 # functions imports 
 
@@ -54,7 +55,7 @@ parser.add_argument('--noauthor',action="store_true", help='remove book with the
 parser.add_argument('--card',type=int, help='retrieve informations from a book')
 parser.add_argument('--cover',action="store_true", help='download the book cover')
 parser.add_argument('--cloud',action="store_true", help='download the book wordcloud')
-
+parser.add_argument('--book_cat',type=str, help='retrieve information and download all books from a specific category')
 args = parser.parse_args()
 
 
@@ -212,3 +213,27 @@ if args.card:
         pprint(book_card)
     except:
         raise ValueError
+
+
+def contains_word(s, w):
+    return (' ' + w + ' ') in (' ' + s + ' ')
+
+if args.book_cat:
+    with open('requirements/pg_catalog.csv') as csvfile:
+        f = csv.reader(csvfile)
+        for row in f:
+            if contains_word(row[8], args.book_cat) == True:
+                infos = {"id" : row[0], "type": row[1], "date": row[2], "title": row[3], "author": row[5], "language": row[4], "bookshelves": row[6]}
+                book = get_book_by_url(row[0])
+                book = clean_book(book)
+                book_card = {
+                    "info": infos,
+                    "lexdiv" : lexical_diversity_measurements(book),
+                    "topics": topic_modelling(book),
+                    "entities": named_entities_recognition(book),
+                    "summary": book_summarizer(book),
+                    "similar": books_similarity(df,int(row[0]),noauthor)
+                }
+                pprint(book_card)
+                wget.download(f"https://www.gutenberg.org/cache/epub/{row[0]}/pg{row[0]}.txt")
+                
