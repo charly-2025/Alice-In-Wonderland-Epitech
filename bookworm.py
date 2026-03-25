@@ -9,6 +9,8 @@ import string
 import spacy
 import csv
 from pprint import pprint
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 
 # functions imports 
 
@@ -51,6 +53,8 @@ parser.add_argument('--similar',type=int, help='Select a book with his ID')
 parser.add_argument('--noauthor',action="store_true", help='remove book with the same autor')
 parser.add_argument('--card',type=int, help='retrieve informations from a book')
 parser.add_argument('--cover',action="store_true", help='download the book cover')
+parser.add_argument('--cloud',action="store_true", help='download the book wordcloud')
+
 args = parser.parse_args()
 
 
@@ -98,6 +102,26 @@ def dl_book_cover(ID,title):
             print(f"Image downloaded as {filename}")
         else:
             print("Failed to download image")
+
+def dl_book_wordcloud(ID):
+
+    # Get book and clean
+    book = get_book_by_url(ID)
+    book = clean_book(book)
+
+    # Remove all Stopword 
+    stop_words = set(stopwords.words('english'))
+    words = word_tokenize(book)
+    filtered_text = ' '.join([word for word in words if word.lower() not in stop_words])
+
+    # Generate Wordcloud
+    wordcloud = WordCloud(width=800, height=800, background_color='white',collocations=False).generate(filtered_text)
+
+    # Display
+    plt.figure(figsize=(10, 10))
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis('off')
+    plt.savefig(f"wordcloud/{ID}-wordcloud.png")
 
 
 # Project
@@ -181,6 +205,9 @@ if args.card:
         
         if args.cover :
             dl_book_cover(args.card,infos["title"])
+
+        if args.cloud :
+            dl_book_wordcloud(args.card)
 
         pprint(book_card)
     except:
