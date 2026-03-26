@@ -21,7 +21,7 @@ Gutenberg through dedicated CLI commands.
 To know about all options to run the programm , do : `python3 bookworm.py --help`
 
 
-## Starting programm 
+## Running
 
 You only have to run `bookworm.py` with available arguments and parameters. 
 
