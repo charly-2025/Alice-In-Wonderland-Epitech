@@ -9,7 +9,7 @@ Gutenberg through dedicated CLI commands.
 
 - Clone the repository
 
-### Requires
+### Requirements
 
 - Create the environnement by running `python3 -m venv ./venv`
 - Activate the environment by running `source ./venv/bin/activate`
