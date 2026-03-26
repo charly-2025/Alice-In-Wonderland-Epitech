@@ -168,6 +168,7 @@ if args.summarize:
         texte = get_book_by_url(args.topics)
         texte = clean_book(texte)
         summary = book_summarizer(texte, 2)
+        # prints the summary
         for sentence in summary:
             print(sentence)
     except:
@@ -185,6 +186,7 @@ if args.card:
             for row in f:
                 if row[0] == str(int(args.card)):
                     infos = {"id" : row[0], "type": row[1], "date": row[2], "title": row[3], "author": row[5], "language": row[4], "bookshelves": row[6]}
+        # creates the book card
         book_card = {
             "info": infos,
             "lexdiv" : lexical_diversity_measurements(book),
@@ -213,9 +215,11 @@ if args.book_cat:
         f = csv.reader(csvfile)
         for row in f:
             if contains_word(row[8], args.book_cat) == True:
+                # gets the book's informations
                 infos = {"id" : row[0], "type": row[1], "date": row[2], "title": row[3], "author": row[5], "language": row[4], "bookshelves": row[6]}
                 book = get_book_by_url(row[0])
                 book = clean_book(book)
+                # creates the book card
                 book_card = {
                     "info": infos,
                     "lexdiv" : lexical_diversity_measurements(book),
@@ -225,5 +229,6 @@ if args.book_cat:
                     "similar": books_similarity(df,int(row[0]),noauthor)
                 }
                 pprint(book_card)
+                # download the book
                 wget.download(f"https://www.gutenberg.org/cache/epub/{row[0]}/pg{row[0]}.txt")
                 

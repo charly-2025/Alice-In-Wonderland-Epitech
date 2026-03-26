@@ -4,12 +4,14 @@ from nltk.corpus import stopwords
 
 def topic_modelling(texte):
     stop_words = set(stopwords.words('english'))
+    # split every sections of book
     chapters = texte.split("\r\n\r\n")
     topics = {}
     count = 1
     for i in chapters:
         if len(i) > 600:
             tokens = nltk.word_tokenize(i.lower())
+            # delete stop words
             tokens = [word for word in tokens if word not in stop_words]
 
             #frequency of each tokens
