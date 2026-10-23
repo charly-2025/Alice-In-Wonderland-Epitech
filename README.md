@@ -17,11 +17,6 @@ A CLI tool that helps publishers and readers make sense of a book without readin
 
 `Python` · `NLP` · `CLI`
 
-## Team
-
-- Charly Richard-Fromont
-- Baptiste Mesnager
-
 ---
 
 ## Technical documentation
@@ -43,11 +38,9 @@ Gutenberg through dedicated CLI commands.
 - Activate the environment by running `source ./venv/bin/activate`
 - Install dependencies `pip install -r requirements/requirements.txt`
 
-
 ### Help
 
 - To know about all options to run the programm , do : `python3 bookworm.py --help`
-
 
 ### Running
 
